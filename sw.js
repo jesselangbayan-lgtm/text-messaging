@@ -1,34 +1,62 @@
-const CACHE_NAME = 'connect-messenger-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json'
-];
+const express = require('express');
+const http = http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
-  self.skipWaiting();
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cors());
+
+// Semaphore API Credentials (set these in your environment variables on Render)
+const SEMAPHORE_API_KEY = process.env.SEMAPHORE_API_KEY || 'YOUR_SEMAPHORE_API_KEY';
+const SEMAPHORE_SENDER_NAME = process.env.SEMAPHORE_SENDER_NAME || 'SEMAPHORE'; // Optional custom sender name
+
+// Endpoint to send SMS via Semaphore
+app.post('/api/send-sms', async (req, res) => {
+  const { to, body } = req.body;
+  
+  try {
+    // Construct form data for Semaphore API request
+    const params = new URLSearchParams();
+    params.append('apikey', SEMAPHORE_API_KEY);
+    params.append('number', to);
+    params.append('message', body);
+    if (SEMAPHORE_SENDER_NAME) {
+      params.append('sendername', SEMAPHORE_SENDER_NAME);
+    }
+
+    const response = await fetch('https://semaphore.co/api/v4/messages', {
+      method: 'POST',
+      body: params
+    });
+
+    const data = await response.json();
+
+    // Semaphore returns an array of message objects on success
+    if (Array.isArray(data) && data.length > 0 && data[0].message_id) {
+      const messageId = data[0].message_id;
+      
+      // Send success response back to frontend app
+      res.json({ success: true, sid: messageId, status: 'sent' });
+
+      // Optional: Simulate or track delivery status update via WebSockets
+      setTimeout(() => {
+        io.emit('sms_status_update', { sid: messageId, status: 'delivered' });
+      }, 3000);
+
+    } else {
+      res.status(400).json({ success: false, error: data.message || 'Failed to send via Semaphore' });
+    }
+
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      );
-    })
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
-    })
-  );
-});
+// Start Server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Semaphore SMS Backend running on port ${PORT}`));
