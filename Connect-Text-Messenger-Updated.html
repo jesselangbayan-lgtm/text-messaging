@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Connect SMS">
+<title>Connect – Text Messenger</title>
+<!-- Inline Manifest for Installation (PWA / WebApp) -->
+<link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIkNvbm5lY3QgVGV4dCBNZXNzZW5nZXIiLAogICJzaG9ydF9uYW1lIjogIkNvbm5lY3QiLAogICJzdGFydF91cmwiOiAiLi8iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwZjE3MmEiLAogICJ0aGVtZV9jb2xvciI6ICIjMGYxNzJhIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9jZG5qcy5jbG91ZGZsYXJlLmNvbS9hamF4L2xpYnMvY29yZXVpL2ljb25zLzIuMC4xL3N2Zy9mcmVlL2NpLWNoYXQtYnViYmxlLnN2ZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0KICBdCn0=">
+
+<style>
+:root { --navy: #0f172a; --blue: #2563eb; --pale: #eff6ff; --line: #e2e8f0; --green: #16a34a; --red: #dc2626; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f1f5f9; color: #0f172a; height: 100vh; height: 100dvh; overflow: hidden; }
+.app { max-width: 1100px; height: 100%; margin: auto; background: white; display: flex; overflow: hidden; }
+aside { width: 330px; background: var(--navy); color: white; display: flex; flex-direction: column; flex-shrink: 0; }
+.sidehead { padding: 18px; border-bottom: 1px solid #334155; }
+.brand { font-size: 21px; font-weight: bold; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+.brand-btn { background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer; padding: 4px; }
+.actions { display: flex; gap: 8px; }
+.actions button, .primary { background: var(--blue); color: white; border: 0; border-radius: 9px; padding: 11px 13px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
+.actions button:hover, .primary:hover { opacity: 0.9; }
+.actions button { flex: 1; }
+.search { width: 100%; margin-top: 12px; padding: 11px; border: 0; border-radius: 8px; background: #334155; color: white; font: inherit; }
+.search::placeholder { color: #94a3b8; }
+#contacts { overflow-y: auto; flex: 1; }
+.contact { padding: 14px 16px; border-bottom: 1px solid #263449; cursor: pointer; display: flex; gap: 12px; align-items: center; transition: background 0.15s; }
+.contact.active, .contact:hover { background: #263449; }
+.avatar { width: 43px; height: 43px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; color: white; font-weight: bold; flex-shrink: 0; }
+.cinfo { min-width: 0; flex: 1; }
+.cname { font-weight: bold; }
+.cnumber, .preview { font-size: 12px; color: #cbd5e1; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.top { padding: 15px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; }
+.top .avatar { background: #dbeafe; color: #1d4ed8; }
+.topinfo { flex: 1; min-width: 0; }
+.topinfo strong { display: block; }
+.topinfo small { color: #64748b; }
+#messages { flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
+.bubble { max-width: min(82%, 520px); padding: 11px 14px; border-radius: 16px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.4; position: relative; }
+.out { align-self: flex-end; background: var(--blue); color: white; border-bottom-right-radius: 4px; }
+.in { align-self: flex-start; background: white; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.meta { font-size: 11px; opacity: 0.85; text-align: right; margin-top: 5px; }
+.status-badge { display: inline-block; font-weight: bold; margin-left: 4px; }
+.status-sending { color: #e2e8f0; }
+.status-queued { color: #fde047; }
+.status-delivered { color: #4ade80; }
+.status-failed { color: #fca5a5; }
+.composer { padding: 13px; border-top: 1px solid var(--line); display: flex; gap: 9px; align-items: flex-end; }
+textarea { flex: 1; resize: none; min-height: 44px; max-height: 130px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; font: inherit; outline: none; }
+textarea:focus { border-color: var(--blue); }
+.send { height: 44px; min-width: 88px; }
+.hint { font-size: 11px; color: #64748b; padding: 8px 14px; background: #fff; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+.welcome { margin: auto; text-align: center; color: #64748b; padding: 30px; }
+.welcome h2 { color: var(--navy); margin-bottom: 8px; }
+dialog { border: 0; border-radius: 16px; padding: 0; width: min(440px, calc(100% - 28px)); box-shadow: 0 20px 60px #0004; }
+dialog::backdrop { background: rgba(15, 23, 42, 0.6); }
+.modalhead { padding: 17px 20px; background: #f8fafc; border-bottom: 1px solid var(--line); font-weight: bold; font-size: 18px; }
+.modalbody { padding: 20px; }
+.field { display: block; margin-bottom: 14px; }
+.field span { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+.field input, .field select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 9px; font: inherit; outline: none; }
+.field input:focus, .field select:focus { border-color: var(--blue); }
+.modalfoot { display: flex; justify-content: flex-end; gap: 9px; padding: 0 20px 20px; }
+.secondary { background: #e2e8f0; color: var(--navy); border: 0; border-radius: 9px; padding: 11px 14px; cursor: pointer; font-weight: bold; }
+.notice { font-size: 12px; line-height: 1.5; color: #475569; background: #f1f5f9; padding: 11px; border-radius: 9px; margin-top: 10px; }
+#status { font-size: 12px; color: #1e40af; padding: 8px 14px; background: #eff6ff; border-top: 1px solid #dbeafe; display: none; }
+.install-banner { background: #2563eb; color: white; padding: 10px 14px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.install-btn { background: white; color: #2563eb; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+@media(max-width:700px){ .app { height: 100%; } .app aside { width: 100%; } main { display: none; } body.chat-open .app aside { display: none; } body.chat-open main { display: flex; } #back { display: inline-block !important; } }
+@media(min-width:701px){ #back { display: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="installBanner" class="install-banner" style="display:none">
+ <span>📱 Install Connect App on your phone screen</span>
+ <button id="installBtn" class="install-btn">Install</button>
+</div>
+
+<div class="app">
+ <aside>
+  <div class="sidehead">
+   <div class="brand">
+    <span>💬 Connect SMS</span>
+    <button id="openSettings" class="brand-btn" title="Gateway Settings">⚙️</button>
+   </div>
+   <div class="actions">
+    <button id="newMessage" type="button">＋ New Message</button>
+    <button id="addContact" type="button">＋ Contact</button>
+   </div>
+   <input id="search" class="search" placeholder="Search name or phone number">
+  </div>
+  <div id="contacts"></div>
+ </aside>
+
+ <main>
+  <div class="top" id="chatHeader" style="display:none">
+   <button id="back" class="secondary" type="button">←</button>
+   <div class="avatar" id="headAvatar">?</div>
+   <div class="topinfo">
+    <strong id="headName"></strong>
+    <small id="headNumber"></small>
+   </div>
+   <button id="editContact" class="secondary" type="button">Edit</button>
+  </div>
+  <div id="messages">
+   <div class="welcome">
+    <h2>Welcome to Connect SMS</h2>
+    <p>Choose a contact or tap <b>+ New Message</b> to start chatting.</p>
+   </div>
+  </div>
+  <div id="status"></div>
+  <div class="composer" id="composer" style="display:none">
+   <textarea id="messageInput" rows="1" placeholder="Write a text message..."></textarea>
+   <button class="primary send" id="send" type="button">Send ↗</button>
+  </div>
+  <div class="hint" id="hint" style="display:none">
+   <span id="gatewayStatusText">⚡ Mode: Native Phone / API SMS Router</span>
+   <button type="button" id="simulateRxBtn" style="font-size:10px; background:none; border:1px solid #cbd5e1; padding:2px 6px; border-radius:4px; cursor:pointer">Simulate Recv SMS</button>
+  </div>
+ </main>
+</div>
+
+<!-- Modal: Contact Dialog -->
+<dialog id="contactDialog">
+ <div class="modalhead" id="dialogTitle">Add Contact</div>
+ <form id="contactForm" method="dialog">
+  <div class="modalbody">
+   <label class="field">
+    <span>Contact name</span>
+    <input id="contactName" required maxlength="70" placeholder="e.g. Maria Santos">
+   </label>
+   <label class="field">
+    <span>Phone number</span>
+    <input id="contactPhone" required type="tel" inputmode="tel" placeholder="+639171234567">
+   </label>
+   <div class="notice">Use full international number format (e.g., +1... or +63...).</div>
+  </div>
+  <div class="modalfoot">
+   <button type="button" class="secondary" id="cancelContact">Cancel</button>
+   <button class="primary" type="submit">Save Contact</button>
+  </div>
+ </form>
+</dialog>
+
+<!-- Modal: Number Dialog -->
+<dialog id="numberDialog">
+ <div class="modalhead">New Message</div>
+ <form id="numberForm" method="dialog">
+  <div class="modalbody">
+   <label class="field">
+    <span>Enter recipient phone number</span>
+    <input id="recipientPhone" type="tel" inputmode="tel" required placeholder="+639171234567">
+   </label>
+   <label class="field">
+    <span>Name (optional – save as contact)</span>
+    <input id="recipientName" maxlength="70" placeholder="Contact name">
+   </label>
+   <div class="notice">You can message a number directly without saving it permanently.</div>
+  </div>
+  <div class="modalfoot">
+   <button type="button" class="secondary" id="cancelNumber">Cancel</button>
+   <button class="primary" type="submit">Continue</button>
+  </div>
+ </form>
+</dialog>
+
+<!-- Modal: Settings Dialog -->
+<dialog id="settingsDialog">
+ <div class="modalhead">SMS Gateway Settings</div>
+ <form id="settingsForm" method="dialog">
+  <div class="modalbody">
+   <label class="field">
+    <span>Messaging Engine</span>
+    <select id="gatewayEngine">
+     <option value="simulated">Simulated Carrier Engine (Browser/PWA Demo)</option>
+     <option value="native_apk">Android Native SMS Hardware (APK Mode)</option>
+     <option value="cloud_api">Cloud Gateway API (Twilio / Custom Server)</option>
+    </select>
+   </label>
+   <div id="cloudApiFields" style="display:none">
+    <label class="field">
+     <span>Backend API URL Endpoint</span>
+     <input id="apiEndpoint" placeholder="https://your-server.com/api/send-sms">
+    </label>
+    <label class="field">
+     <span>API Auth Token / Key</span>
+     <input id="apiKey" type="password" placeholder="e.g. secret_token_xyz">
+    </label>
+   </div>
+   <div class="notice">
+    • <b>Android APK Mode:</b> Sends directly using phone carrier load.<br>
+    • <b>Cloud API Mode:</b> Routes through web backend to prevent carrier blocks.
+   </div>
+  </div>
+  <div class="modalfoot">
+   <button type="button" class="secondary" id="cancelSettings">Close</button>
+   <button class="primary" type="submit">Save Settings</button>
+  </div>
+ </form>
+</dialog>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $ = id => document.getElementById(id);
+  const load = (k, f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
+  
+  let contacts = load('connect_contacts_v4', [
+    { id: 'c1', name: 'Demo Contact', phone: '+15550199' }
+  ]);
+  let histories = load('connect_messages_v4', {});
+  let settings = load('connect_settings_v4', { engine: 'simulated', apiEndpoint: '', apiKey: '' });
+  let active = null, editing = null, deferredPrompt = null;
+
+  const save = () => {
+    localStorage.setItem('connect_contacts_v4', JSON.stringify(contacts));
+    localStorage.setItem('connect_messages_v4', JSON.stringify(histories));
+    localStorage.setItem('connect_settings_v4', JSON.stringify(settings));
+  };
+
+  const normalize = n => n.trim().replace(/[^\d+]/g, '');
+  const valid = n => /^\+?[0-9]{7,15}$/.test(normalize(n));
+  const safe = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const initials = n => n.trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '☎';
+  const stamp = () => new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+  // PWA Home Screen Installation Prompt Handler
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    $('installBanner').style.display = 'flex';
+  });
+
+  $('installBtn').onclick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(() => {
+        $('installBanner').style.display = 'none';
+        deferredPrompt = null;
+      });
+    }
+  };
+
+  function showDialog(dialogEl) {
+    if (typeof dialogEl.showModal === 'function') dialogEl.showModal();
+    else dialogEl.setAttribute('open', 'true');
+  }
+
+  function hideDialog(dialogEl) {
+    if (typeof dialogEl.close === 'function') dialogEl.close();
+    else dialogEl.removeAttribute('open');
+  }
+
+  function renderContacts() {
+    const q = $('search').value.toLowerCase();
+    const filtered = contacts.filter(c => (c.name + ' ' + c.phone).toLowerCase().includes(q));
+    
+    $('contacts').innerHTML = filtered.map(c => `
+      <div class="contact ${active === c.id ? 'active' : ''}" data-id="${c.id}">
+        <div class="avatar">${safe(initials(c.name || c.phone))}</div>
+        <div class="cinfo">
+          <div class="cname">${safe(c.name || c.phone)}</div>
+          <div class="cnumber">${safe(c.phone)}</div>
+          <div class="preview">${safe((histories[c.id] || []).slice(-1)[0]?.text || 'Tap to message')}</div>
+        </div>
+      </div>
+    `).join('') || '<div style="padding:22px;color:#cbd5e1">No contacts found. Tap + Contact or + New Message.</div>';
+
+    document.querySelectorAll('.contact').forEach(el => {
+      el.onclick = () => select(el.dataset.id);
+    });
+  }
+
+  function select(id) {
+    active = id;
+    const c = contacts.find(x => x.id === id);
+    if (!c) return;
+    
+    document.body.classList.add('chat-open');
+    $('chatHeader').style.display = 'flex';
+    $('composer').style.display = 'flex';
+    $('hint').style.display = 'flex';
+    $('headName').textContent = c.name || c.phone;
+    $('headNumber').textContent = c.phone;
+    $('headAvatar').textContent = initials(c.name || c.phone);
+    
+    renderMessages();
+    renderContacts();
+    $('messageInput').focus();
+  }
+
+  function getStatusBadge(status) {
+    switch (status) {
+      case 'sending': return '<span class="status-badge status-sending">· Sending...</span>';
+      case 'queued': return '<span class="status-badge status-queued">· Queued</span>';
+      case 'delivered': return '<span class="status-badge status-delivered">· Delivered ✓✓</span>';
+      case 'failed': return '<span class="status-badge status-failed">· Failed ✕</span>';
+      default: return ' · Sent';
+    }
+  }
+
+  function renderMessages() {
+    const arr = histories[active] || [];
+    $('messages').innerHTML = arr.map(m => `
+      <div class="bubble ${m.sent ? 'out' : 'in'}">
+        ${safe(m.text)}
+        <div class="meta">${safe(m.time || '')}${m.sent ? getStatusBadge(m.status) : ''}</div>
+      </div>
+    `).join('') || '<div class="welcome"><h2>Start a conversation</h2><p>Type your message below and tap Send.</p></div>';
+    
+    $('messages').scrollTop = $('messages').scrollHeight;
+  }
+
+  function upsert(name, phone) {
+    phone = normalize(phone);
+    let c = contacts.find(x => x.phone === phone);
+    if (c) {
+      if (name) c.name = name;
+      return c;
+    }
+    c = { id: 'c' + Date.now() + Math.random().toString(16).slice(2, 6), name: name || phone, phone };
+    contacts.unshift(c);
+    return c;
+  }
+
+  // Incoming SMS Receiver Handler (Triggered by Native Android Container or Webhooks)
+  window.receiveIncomingSMS = function(senderPhone, messageText) {
+    const c = upsert('', senderPhone);
+    histories[c.id] = histories[c.id] || [];
+    histories[c.id].push({ text: messageText, sent: false, time: stamp() });
+    save();
+    renderContacts();
+    if (active === c.id) renderMessages();
+  };
+
+  // Button Listeners
+  $('addContact').onclick = () => openContact();
+  $('newMessage').onclick = () => showDialog($('numberDialog'));
+  $('cancelContact').onclick = () => hideDialog($('contactDialog'));
+  $('cancelNumber').onclick = () => hideDialog($('numberDialog'));
+  $('openSettings').onclick = () => {
+    $('gatewayEngine').value = settings.engine;
+    $('apiEndpoint').value = settings.apiEndpoint || '';
+    $('apiKey').value = settings.apiKey || '';
+    $('cloudApiFields').style.display = settings.engine === 'cloud_api' ? 'block' : 'none';
+    showDialog($('settingsDialog'));
+  };
+  $('cancelSettings').onclick = () => hideDialog($('settingsDialog'));
+
+  $('gatewayEngine').onchange = (e) => {
+    $('cloudApiFields').style.display = e.target.value === 'cloud_api' ? 'block' : 'none';
+  };
+
+  $('settingsForm').onsubmit = (e) => {
+    e.preventDefault();
+    settings.engine = $('gatewayEngine').value;
+    settings.apiEndpoint = $('apiEndpoint').value.trim();
+    settings.apiKey = $('apiKey').value.trim();
+    save();
+    hideDialog($('settingsDialog'));
+    $('gatewayStatusText').textContent = `⚡ Mode: ${settings.engine.toUpperCase()}`;
+  };
+
+  function openContact(name = '', phone = '', isEdit = false) {
+    editing = isEdit ? active : null;
+    $('dialogTitle').textContent = isEdit ? 'Edit Contact' : 'Add Contact';
+    $('contactName').value = name;
+    $('contactPhone').value = phone;
+    showDialog($('contactDialog'));
+  }
+
+  $('contactForm').onsubmit = e => {
+    e.preventDefault();
+    const name = $('contactName').value.trim(), phone = $('contactPhone').value;
+    if (!valid(phone)) { alert('Please enter a valid phone number including country code.'); return; }
+    if (editing) {
+      const c = contacts.find(x => x.id === editing);
+      if (c) { c.name = name; c.phone = normalize(phone); }
+    } else {
+      upsert(name, phone);
+    }
+    save(); hideDialog($('contactDialog')); renderContacts();
+    if (active) select(active);
+  };
+
+  $('numberForm').onsubmit = e => {
+    e.preventDefault();
+    const phone = $('recipientPhone').value, name = $('recipientName').value.trim();
+    if (!valid(phone)) { alert('Please enter a valid phone number.'); return; }
+    const c = upsert(name, phone);
+    save(); hideDialog($('numberDialog'));
+    $('recipientPhone').value = ''; $('recipientName').value = '';
+    select(c.id);
+  };
+
+  $('editContact').onclick = () => {
+    const c = contacts.find(x => x.id === active);
+    if (c) openContact(c.name, c.phone, true);
+  };
+
+  $('back').onclick = () => document.body.classList.remove('chat-open');
+  $('search').oninput = renderContacts;
+
+  // Simulator for incoming message testing
+  $('simulateRxBtn').onclick = () => {
+    if (!active) return;
+    const c = contacts.find(x => x.id === active);
+    window.receiveIncomingSMS(c.phone, "Hello! I received your text message successfully.");
+  };
+
+  // Dispatch Handler
+  $('send').onclick = async () => {
+    const body = $('messageInput').value.trim();
+    if (!body || !active) return;
+    const c = contacts.find(x => x.id === active);
+    if (!c) return;
+
+    const msgId = 'm_' + Date.now();
+    const msg = { id: msgId, text: body, sent: true, time: stamp(), status: 'sending' };
+
+    histories[active] = histories[active] || [];
+    histories[active].push(msg);
+    save(); renderMessages(); renderContacts();
+    $('messageInput').value = '';
+
+    // Route message according to selected engine
+    if (settings.engine === 'native_apk' && window.AndroidSMS) {
+      // Calls Android Native Hardware SMS bridge
+      try {
+        window.AndroidSMS.sendSMS(c.phone, body, msgId);
+      } catch (err) {
+        msg.status = 'failed'; save(); renderMessages();
+      }
+    } else if (settings.engine === 'cloud_api' && settings.apiEndpoint) {
+      // Cloud API fetch request
+      try {
+        const res = await fetch(settings.apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.apiKey}` },
+          body: JSON.stringify({ to: c.phone, body: body })
+        });
+        const data = await res.json();
+        msg.status = data.success ? 'delivered' : 'failed';
+      } catch {
+        msg.status = 'failed';
+      }
+      save(); if (active === c.id) renderMessages();
+    } else {
+      // Default Simulated Engine
+      setTimeout(() => { msg.status = 'queued'; save(); if (active === c.id) renderMessages(); }, 1000);
+      setTimeout(() => { msg.status = 'delivered'; save(); if (active === c.id) renderMessages(); }, 2600);
+    }
+  };
+
+  $('messageInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('send').click(); }
+  });
+
+  renderContacts();
+});
+</script>
+</body>
+</html>
